@@ -12,18 +12,18 @@ type Command {
 }
 
 type Position {
-  Position(x: Int, y: Int)
+  Position(x: Int, y: Int, aim: Int)
 }
 
 fn initial_position() -> Position {
-  Position(x: 0, y: 0)
+  Position(x: 0, y: 0, aim: 0)
 }
 
 fn move(pos: Position, cmd: Command) -> Position {
   case cmd {
-    Forward(dx) -> Position(x: pos.x + dx, y: pos.y)
-    Down(dy) -> Position(x: pos.x, y: pos.y + dy)
-    Up(dy) -> Position(x: pos.x, y: pos.y - dy)
+    Forward(dx) -> Position(x: pos.x + dx, y: pos.y + { dx * pos.aim }, aim: pos.aim)
+    Down(dy) -> Position(x: pos.x, y: pos.y, aim: pos.aim + dy)
+    Up(dy) -> Position(x: pos.x, y: pos.y, aim: pos.aim - dy)
   }
 }
 
