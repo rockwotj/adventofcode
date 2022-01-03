@@ -1,7 +1,6 @@
 import gleam/io
 import gleam/bool
 import gleam/list
-import gleam/set
 import gleam/result
 import gleam/function
 import gleam/string
@@ -62,20 +61,25 @@ type PuzzleSolution {
 }
 
 type FindState {
-  Looking(drawn_so_far: DrawnNumbers)
+  Looking(grids_left: List(BingoGrid), drawn_so_far: DrawnNumbers)
   Found(solution: PuzzleSolution)
 }
 
-fn find_first_winner(puzzle: Puzzle) -> PuzzleSolution {
+fn find_last_winner(puzzle: Puzzle) -> PuzzleSolution {
   let find_winner = fn(state: FindState, drawn: Int) -> list.ContinueOrStop(FindState) {
-    assert Looking(prev_drawn) = state
+    assert Looking(grids, prev_drawn) = state
     let drawn_so_far = [drawn, ..prev_drawn]
-    case puzzle.grids |> list.find(is_winner(_, drawn_so_far)) {
-      Ok(grid) -> list.Stop(Found(PuzzleSolution(grid, drawn_so_far)))
-      _ -> list.Continue(Looking(drawn_so_far))
+    let grids_left = grids |> list.filter(function.compose(is_winner(_, drawn_so_far), bool.negate))
+    case grids_left {
+      [] -> {
+        assert [last] = grids
+        list.Stop(Found(PuzzleSolution(last, drawn_so_far)))
+      }
+      _ -> list.Continue(Looking(grids_left, drawn_so_far))
     }
   }
-  assert Found(solution) = list.fold_until(puzzle.drawn, Looking(drawn_so_far: []), find_winner)
+  let init = Looking(puzzle.grids, drawn_so_far: [])
+  assert Found(solution) = list.fold_until(puzzle.drawn, init, find_winner)
   solution
 }
 
@@ -91,7 +95,7 @@ fn calculate_score(solution: PuzzleSolution) -> Int {
 pub fn main() {
   assert Ok(contents) = file.read("input.txt")
   assert Ok(puzzle) = parse_puzzle(contents)
-  let score = find_first_winner(puzzle) |> calculate_score
-  io.print("The first winning puzzle score is: ")
+  let score = find_last_winner(puzzle) |> calculate_score
+  io.print("The last winning puzzle score is: ")
   io.println(int.to_string(score))
 }
